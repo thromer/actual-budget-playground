@@ -20,6 +20,11 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
   }
 }
 
+function isValidInteger(value: string): boolean {
+  const num = parseInt(value, 10);
+  return !isNaN(num) && isFinite(num) && value.trim() !== '';
+}
+
 async function main() {
   let creds;
   try {
@@ -41,9 +46,22 @@ async function main() {
   await api.downloadBudget(pikapod_sync_id, {
     password: creds.actual.encryption_password
   });
+  const last_str = process.argv[3];
+  if (process.argv.length != 4 || last_str === undefined) {  // undefined test for eslint
+    console.log(`Usage: node dist/index.js <account_id> <last n days>`);
+    process.exit(1);
+  }
 
-  const budget = await api.getBudgetMonth('2025-09');
-  console.log(budget);
+  if (!isValidInteger(last_str)) {
+    console.log(`Non-integer value for "last n days": ${last_str}`);
+    process.exit(1);
+  }
+  const last = parseInt(last_str);
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - last);
+  const transactions = await api.getTransactions(process.argv[2], start, end);
+  console.log(transactions);
   await api.shutdown();
 }
 

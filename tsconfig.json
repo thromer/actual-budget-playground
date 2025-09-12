@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+	"target": "es2022",
+	"noImplicitAny": true,
+	"useDefineForClassFields": true,
+	"forceConsistentCasingInFileNames": true,
+	"module": "commonjs",
+	"lib": ["ES2022"],
+	"outDir": "./dist",
+	"rootDir": "./src",
+	"skipLibCheck": true,
+	"isolatedModules": true,
+	"moduleDetection": "force",
+	"esModuleInterop": true,
+	"allowSyntheticDefaultImports": true,
+	"strict": true,
+	"allowUnreachableCode": false,
+	"allowUnusedLabels": false,
+	"noUnusedLocals": true,
+	"noUnusedParameters": true,
+	"exactOptionalPropertyTypes": true,
+	"noImplicitReturns": true,
+	"noFallthroughCasesInSwitch": true,
+	"noUncheckedIndexedAccess": true,
+	"noImplicitOverride": true,
+	"noPropertyAccessFromIndexSignature": true
+    },
+
+    "include": ["src/**/*"]
+}

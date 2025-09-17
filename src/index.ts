@@ -1,3 +1,5 @@
+// TODO would be nice not to have manually update sync id when it changes.
+
 // For example:
 // yarn dev 'Cash test' 3
 import { mkdir, readFile } from 'fs/promises';
@@ -32,31 +34,35 @@ function isValidInteger(value: string): boolean {
 async function main() {
   const account = process.argv[2];
   const last_str = process.argv[3];
-  if (process.argv.length != 4 || account == undefined || last_str === undefined || !isValidInteger(last_str)) {
-    console.log(`Usage: node dist/index.js <account_id|account_name> <last n days>`);
+  const command = process.argv[4] || "";
+  if (process.argv.length < 4 || process.argv.length > 5 || account == undefined || last_str === undefined || !isValidInteger(last_str)) {
+    console.log(`Usage: node dist/index.js <account_id|account_name> <last n days> [add|remove]`);
     process.exit(1);
   }
-  const last = parseInt(last_str);
+  if (!new Set(["", "full", "add", "remove"]).has(command)) {
+    console.log(`Unknown command: ${command}`);
+    process.exit(1);
+  }
 
+  const last = parseInt(last_str);
+  const configDir = process.env['HOME'] + '/.config/actual';
   let creds;
   try {
-    creds = await readJsonFile<Credentials>('credentials.json');
+    creds = await readJsonFile<Credentials>(configDir + '/credentials.json');
   } catch (error) {
     console.error('Error:', error instanceof Error ? error.message : error);
     process.exit(1);
   }
-  const dataDir = process.env['HOME'] + '/.config/actual/cache';
+  const dataDir = configDir + '/cache';
   await mkdir(dataDir, { recursive: true });
   const config = {
     dataDir: dataDir,
-    serverURL: `https://${creds.actual.host}/`,
+    serverURL: creds.actual.host,
     password: creds.actual.server_password
   };
   await api.init(config);
 
-  await api.downloadBudget(creds.actual.sync_id, {
-    password: creds.actual.encryption_password
-  });
+  await api.downloadBudget(creds.actual.sync_id);
   let acct;
   const accounts = await api.getAccounts();
   const by_id = new Map(accounts.map(a => [a.id, a]));
@@ -74,7 +80,27 @@ async function main() {
   const start = new Date(end);
   start.setDate(start.getDate() - last);
   const transactions = await api.getTransactions(acct.id, start, end);
-  console.log(transactions);
+  const test_prefix = "[test] ";
+  const tpl = test_prefix.length
+  for (const t of transactions) {
+    if (command === "full") {
+      console.log(t);
+    } else {
+      console.log(t.date, t.amount, t.notes);
+    }
+    let new_notes: string | null = null
+    if (command == "add" && t.notes === "very fake") {
+      new_notes = test_prefix + t.notes;
+    } else if (command == "remove") {
+      if (t.notes.slice(0, tpl) == test_prefix) {
+	new_notes = t.notes.slice(tpl);
+      }
+    }
+    if (new_notes !== null) {
+      console.log(`Updating note to ${new_notes}`);
+      await api.updateTransaction(t.id, {notes: new_notes});
+    }
+  }
   await api.shutdown();
 }
 

@@ -4,7 +4,7 @@
 // yarn dev 'Cash test' 3
 
 import { mkdir, readFile } from 'fs/promises';
-import {batchBudgetUpdates, downloadBudget, getAccounts, getTransactions, shutdown, init, updateTransaction} from '@actual-app/api';
+import *  as api from '@actual-app/api';
 import { TransactionEntity } from '@actual-app/api/@types/loot-core/src/types/models';
 
 interface Credentials {
@@ -62,11 +62,11 @@ async function main() {
     serverURL: creds.actual.host,
     password: creds.actual.server_password
   };
-  await init(config);
+  await api.init(config);
 
-  await downloadBudget(creds.actual.sync_id);
+  await api.downloadBudget(creds.actual.sync_id);
   let acct;
-  const accounts = await getAccounts();
+  const accounts = await api.getAccounts();
   const by_id = new Map(accounts.map(a => [a.id, a]));
   if (by_id.has(account)) {
     acct = by_id.get(account);
@@ -81,9 +81,9 @@ async function main() {
   const end = new Date();
   const start = new Date(end);
   start.setDate(start.getDate() - last);
-  const transactions = await getTransactions(acct.id, start, end);
-  await batchBudgetUpdates(async function() {await updateTransactions(transactions, command);});
-  await shutdown();
+  const transactions = await api.getTransactions(acct.id, start, end);
+  await api.batchBudgetUpdates(async function() {await updateTransactions(transactions, command);});
+  await api.shutdown();
 }
 
 async function updateTransactions(transactions: TransactionEntity[], command: string) {
@@ -106,7 +106,7 @@ async function updateTransactions(transactions: TransactionEntity[], command: st
     }
     if (new_notes !== null) {
       console.log(`Updating note to ${new_notes}`);
-      await updateTransaction(t.id, {notes: new_notes});
+      await api.updateTransaction(t.id, {notes: new_notes});
     }
   }
 }

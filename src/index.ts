@@ -2,8 +2,10 @@
 
 // For example:
 // yarn dev 'Cash test' 3
+
 import { mkdir, readFile } from 'fs/promises';
-import * as api from '@actual-app/api';
+import {batchBudgetUpdates, downloadBudget, getAccounts, getTransactions, shutdown, init, updateTransaction} from '@actual-app/api';
+import { TransactionEntity } from '@actual-app/api/@types/loot-core/src/types/models';
 
 interface Credentials {
   actual: {
@@ -36,7 +38,7 @@ async function main() {
   const last_str = process.argv[3];
   const command = process.argv[4] || "";
   if (process.argv.length < 4 || process.argv.length > 5 || account == undefined || last_str === undefined || !isValidInteger(last_str)) {
-    console.log(`Usage: node dist/index.js <account_id|account_name> <last n days> [add|remove]`);
+    console.log(`Usage: node dist/index.js <account_id|account_name> <last n days> [add|remove|full]`);
     process.exit(1);
   }
   if (!new Set(["", "full", "add", "remove"]).has(command)) {
@@ -60,11 +62,11 @@ async function main() {
     serverURL: creds.actual.host,
     password: creds.actual.server_password
   };
-  await api.init(config);
+  await init(config);
 
-  await api.downloadBudget(creds.actual.sync_id);
+  await downloadBudget(creds.actual.sync_id);
   let acct;
-  const accounts = await api.getAccounts();
+  const accounts = await getAccounts();
   const by_id = new Map(accounts.map(a => [a.id, a]));
   if (by_id.has(account)) {
     acct = by_id.get(account);
@@ -79,7 +81,12 @@ async function main() {
   const end = new Date();
   const start = new Date(end);
   start.setDate(start.getDate() - last);
-  const transactions = await api.getTransactions(acct.id, start, end);
+  const transactions = await getTransactions(acct.id, start, end);
+  await batchBudgetUpdates(async function() {await updateTransactions(transactions, command);});
+  await shutdown();
+}
+
+async function updateTransactions(transactions: TransactionEntity[], command: string) {
   const test_prefix = "[test] ";
   const tpl = test_prefix.length
   for (const t of transactions) {
@@ -89,19 +96,19 @@ async function main() {
       console.log(t.date, t.amount, t.notes);
     }
     let new_notes: string | null = null
-    if (command == "add" && t.notes === "very fake") {
+    const old_notes = t.notes ? t.notes : "";
+    if (command == "add") {
       new_notes = test_prefix + t.notes;
     } else if (command == "remove") {
-      if (t.notes.slice(0, tpl) == test_prefix) {
-	new_notes = t.notes.slice(tpl);
+      if (old_notes.slice(0, tpl) == test_prefix) {
+	new_notes = old_notes.slice(tpl);
       }
     }
     if (new_notes !== null) {
       console.log(`Updating note to ${new_notes}`);
-      await api.updateTransaction(t.id, {notes: new_notes});
+      await updateTransaction(t.id, {notes: new_notes});
     }
   }
-  await api.shutdown();
 }
 
 main();

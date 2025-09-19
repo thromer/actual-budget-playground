@@ -38,7 +38,7 @@ async function main() {
   const last_str = process.argv[3];
   const command = process.argv[4] || "";
   if (process.argv.length < 4 || process.argv.length > 5 || account == undefined || last_str === undefined || !isValidInteger(last_str)) {
-    console.log(`Usage: node dist/index.js <account_id|account_name> <last n days> [add|remove|full]`);
+    console.log(`Usage: node dist/example.js <account_id|account_name> <last n days> [add|remove|full]`);
     process.exit(1);
   }
   if (!new Set(["", "full", "add", "remove"]).has(command)) {

@@ -1,11 +1,16 @@
 import { mkdir, readFile } from 'fs/promises';
 import *  as api from '@actual-app/api';
-// import { exportBudget } from '@actual-app/api/loot-core/server/budgetfiles/app';
-// import { exportBudget } from '@actual-app/api/loot-core/server/budgetfiles/app';
 
-// import { app/*, exportBudget */ } from '@actual-app/api/@types/loot-core/src/server/budgetfiles/app';
-// import { exportBudget } from 'loot-core/src/server/budgetfiles/app';
-import { exportBudget } from '@actual-app/api/@types/loot-core/src/server/budgetfiles/app';
+// Playing around. This doesn't actually do anything. 
+
+
+// Will any of these work ?
+
+// nope import { app/*, exportBudget */ } from '@actual-app/api/@types/loot-core/src/server/budgetfiles/app';
+// Nope import { exportBudget } from 'loot-core/src/server/budgetfiles/app';
+// Nope import { exportBudget } from '@actual-app/api/@types/loot-core/src/server/budgetfiles/app';
+// Nope import { exportBudget } from '@actual-app/api/loot-core/server/budgetfiles/app';
+
 
 interface Credentials {
   actual: {
@@ -50,8 +55,9 @@ async function main() {
 
   // const response = await const response = await send('export-budget'); // app.method('export-budget', exportBudget)
   // const response = await api.app.handlers['export-budget']();
-  const response = await exportBudget();
-  console.log(response ? "ok" : "not ok");
+  // const response = await exportBudget();
+  // console.log(response ? "ok" : "not ok");
+  console.log("Not actually implemented...")
 }
 
 main()

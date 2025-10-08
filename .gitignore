@@ -2,3 +2,4 @@ credentials.json
 node_modules/
 dist/
 .aider*
+.yarn/install-state.gz

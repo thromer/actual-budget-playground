@@ -1,3 +1,4 @@
+// TODO make this and prependnotes subcommands of general purpose command
 // TODO would be nice not to have manually update sync id when it changes.
 
 // For example:
@@ -5,7 +6,64 @@
 
 import { mkdir, readFile } from 'fs/promises';
 import *  as api from '@actual-app/api';
-import { TransactionEntity } from '@actual-app/api/@types/loot-core/src/types/models';
+import { Command } from 'commander';
+import { z } from 'zod';
+
+// TODO: make include & exclude optional
+// TODO: include
+// TODO: include/exclude -> include-notes in name and help
+const optionsSchema = z.object({
+  account: z.string(),
+  start: z.iso.date('Must be valid ISO YYYY-MM-DD date'),
+  end: z.iso.date('Must be valid ISO YYYY-MM-DD date'),
+  // exclude: z.string().transform((val, ctx) => {
+  //   const firstSlash = val.indexOf('/')
+  //   const lastSlash = val.lastIndexOf('/')
+  //   if (firstSlash != 0 || lastSlash < 0 || firstSlash == lastSlash) {
+  //     ctx.addIssue({
+  // 	code: "custom",
+  // 	message: 'regex must be of the form /<regex>/<optional flags>',
+  //     });
+  //     return z.NEVER;
+  //   }
+  //   try {
+  //     return new RegExp(val.slice(1, lastSlash), val.slice(lastSlash + 1));
+  //   } catch (e) {
+  //     ctx.addIssue({
+  //       code: "custom",
+  //       message: e instanceof Error ? e.message : 'unknown error',
+  //     });
+  //     return z.NEVER;
+  //   }
+  // }),
+  full: z.boolean(),
+}).refine((options) => options.start <= options.end, {message: 'start must be less than or equal to end', path: ['start,end']});
+
+type Options = z.infer<typeof optionsSchema>;
+
+const program = new Command();
+program
+  .name('adjustnotes')
+  .description('Prepend string to notes field for subset of transactions')
+  .version('1.0.0')
+  .requiredOption('-a, --account <str>', 'Account name or id')
+  .requiredOption('-s, --start <date>', 'Start date, YYYY-MM-DD')
+  .requiredOption('-e, --end <date>', 'End date, YYYY-MM-DD', '9999-12-31')
+  // .option('-x, --include /<pattern>/<optional options>', `Notes regex to include e.g. /\\b(#review|#reviewed)\\b/i`)
+  // .option('-x, --exclude /<pattern>/<optional options>', `Notes regex to exclude e.g. /\\b(#review|#reviewed)\\b/i`)
+  .option('-f, --full', 'Dump full record', false)
+  .action((options) => {
+    const result = optionsSchema.safeParse(options);
+    if (!result.success) {
+      result.error.issues.forEach(err => {
+        console.error(`${err.path.join('.')}: ${err.message}`);
+      });
+      process.exit(1);
+    }
+    main(result.data);
+  });
+
+program.parse(process.argv);
 
 interface Credentials {
   actual: {
@@ -16,6 +74,7 @@ interface Credentials {
   }
 }
 
+// TODO: inline me
 async function readJsonFile<T>(filePath: string): Promise<T> {
   try {
     const fileContent = await readFile(filePath, 'utf-8');
@@ -28,25 +87,7 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
   }
 }
 
-function isValidInteger(value: string): boolean {
-  const num = parseInt(value, 10);
-  return !isNaN(num) && isFinite(num) && value.trim() !== '';
-}
-
-async function main() {
-  const account = process.argv[2];
-  const last_str = process.argv[3];
-  const command = process.argv[4] || "";
-  if (process.argv.length < 4 || process.argv.length > 5 || account == undefined || last_str === undefined || !isValidInteger(last_str)) {
-    console.log(`Usage: node dist/example.js <account_id|account_name> <last n days> [add|remove|full]`);
-    process.exit(1);
-  }
-  if (!new Set(["", "full", "add", "remove"]).has(command)) {
-    console.log(`Unknown command: ${command}`);
-    process.exit(1);
-  }
-
-  const last = parseInt(last_str);
+async function main(options: Options) {
   const configDir = process.env['HOME'] + '/.config/actual';
   let creds;
   try {
@@ -65,6 +106,7 @@ async function main() {
   await api.init(config);
 
   await api.downloadBudget(creds.actual.sync_id);
+  const account = options.account;
   let acct;
   const accounts = await api.getAccounts();
   const by_id = new Map(accounts.map(a => [a.id, a]));
@@ -78,37 +120,13 @@ async function main() {
     }
     acct = by_name.get(account);
   }
-  const end = new Date();
-  const start = new Date(end);
-  start.setDate(start.getDate() - last);
-  const transactions = await api.getTransactions(acct.id, start, end);
-  await api.batchBudgetUpdates(async function() {await updateTransactions(transactions, command);});
-  await api.shutdown();
-}
-
-async function updateTransactions(transactions: TransactionEntity[], command: string) {
-  const test_prefix = "[test] ";
-  const tpl = test_prefix.length
+  const transactions = await api.getTransactions(acct.id, options.start, options.end);
   for (const t of transactions) {
-    if (command === "full") {
+    if (options.full) {
       console.log(t);
     } else {
       console.log(t.date, t.amount, t.notes);
     }
-    let new_notes: string | null = null
-    const old_notes = t.notes ? t.notes : "";
-    if (command == "add") {
-      new_notes = test_prefix + t.notes;
-    } else if (command == "remove") {
-      if (old_notes.slice(0, tpl) == test_prefix) {
-	new_notes = old_notes.slice(tpl);
-      }
-    }
-    if (new_notes !== null) {
-      console.log(`Updating note to ${new_notes}`);
-      await api.updateTransaction(t.id, {notes: new_notes});
-    }
   }
+  await api.shutdown();
 }
-
-main();

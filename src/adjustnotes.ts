@@ -1,3 +1,4 @@
+// TODO make this and prependnotes subcommands of general purpose command
 // TODO: would be nice not to have manually update sync id when it changes.
 // TODO: would be nice to get all the Command.parse errors not just the first.
 
@@ -71,6 +72,7 @@ interface Credentials {
   }
 }
 
+// TODO: inline me
 async function readJsonFile<T>(filePath: string): Promise<T> {
   try {
     const fileContent = await readFile(filePath, 'utf-8');

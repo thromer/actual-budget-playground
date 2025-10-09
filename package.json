@@ -17,6 +17,7 @@
    "scripts": {
       "build": "eslint && tsc",
       "example": "yarn build && node dist/example.js",
+      "hack": "yarn build && node dist/hack.js",
       "backup": "yarn build && node dist/backup.js",
       "adjustnotes": "yarn build && node dist/adjustnotes.js",
       "lint": "eslint",

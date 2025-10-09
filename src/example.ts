@@ -9,33 +9,36 @@ import *  as api from '@actual-app/api';
 import { Command } from 'commander';
 import { z } from 'zod';
 
-// TODO: make include & exclude optional
-// TODO: include
-// TODO: include/exclude -> include-notes in name and help
+function createRegexTransform() {
+  return (val: string, ctx: z.RefinementCtx): RegExp => {
+    console.log(`val=${val}`);
+    const firstSlash = val.indexOf('/');
+    const lastSlash = val.lastIndexOf('/');
+    if (firstSlash != 0 || lastSlash < 0 || firstSlash == lastSlash) {
+      ctx.addIssue({
+        code: "custom",
+        message: 'regex must be of the form /<regex>/<optional flags>',
+      });
+      return z.NEVER;
+    }
+    try {
+      return new RegExp(val.slice(1, lastSlash), val.slice(lastSlash + 1));
+    } catch (e) {
+      ctx.addIssue({
+        code: "custom",
+        message: e instanceof Error ? e.message : 'unknown error',
+      });
+      return z.NEVER;
+    }
+  };
+}
+
 const optionsSchema = z.object({
   account: z.string(),
   start: z.iso.date('Must be valid ISO YYYY-MM-DD date'),
   end: z.iso.date('Must be valid ISO YYYY-MM-DD date'),
-  // exclude: z.string().transform((val, ctx) => {
-  //   const firstSlash = val.indexOf('/')
-  //   const lastSlash = val.lastIndexOf('/')
-  //   if (firstSlash != 0 || lastSlash < 0 || firstSlash == lastSlash) {
-  //     ctx.addIssue({
-  // 	code: "custom",
-  // 	message: 'regex must be of the form /<regex>/<optional flags>',
-  //     });
-  //     return z.NEVER;
-  //   }
-  //   try {
-  //     return new RegExp(val.slice(1, lastSlash), val.slice(lastSlash + 1));
-  //   } catch (e) {
-  //     ctx.addIssue({
-  //       code: "custom",
-  //       message: e instanceof Error ? e.message : 'unknown error',
-  //     });
-  //     return z.NEVER;
-  //   }
-  // }),
+  includeNotes: z.string().transform(createRegexTransform()).optional(),
+  excludeNotes: z.string().transform(createRegexTransform()).optional(),
   full: z.boolean(),
 }).refine((options) => options.start <= options.end, {message: 'start must be less than or equal to end', path: ['start,end']});
 
@@ -49,8 +52,8 @@ program
   .requiredOption('-a, --account <str>', 'Account name or id')
   .requiredOption('-s, --start <date>', 'Start date, YYYY-MM-DD')
   .requiredOption('-e, --end <date>', 'End date, YYYY-MM-DD', '9999-12-31')
-  // .option('-x, --include /<pattern>/<optional options>', `Notes regex to include e.g. /\\b(#review|#reviewed)\\b/i`)
-  // .option('-x, --exclude /<pattern>/<optional options>', `Notes regex to exclude e.g. /\\b(#review|#reviewed)\\b/i`)
+  .option('-i, --include-notes /<pattern>/<optional options>', `Notes regex to include e.g. /\\b(#review|#reviewed)\\b/i`)
+  .option('-x, --exclude-notes /<pattern>/<optional options>', `Notes regex to exclude e.g. /\\b(#review|#reviewed)\\b/i`)
   .option('-f, --full', 'Dump full record', false)
   .action((options) => {
     const result = optionsSchema.safeParse(options);
@@ -60,6 +63,8 @@ program
       });
       process.exit(1);
     }
+    console.log(`options.include=${options.includeNotes}`);
+    console.log(`options.exclude=${options.excludeNotes}`);
     main(result.data);
   });
 
@@ -122,6 +127,14 @@ async function main(options: Options) {
   }
   const transactions = await api.getTransactions(acct.id, options.start, options.end);
   for (const t of transactions) {
+    if (options.includeNotes && !t.notes.match(options.includeNotes)) {
+      console.log(`${t.notes} not included`);
+      continue;
+    }
+    if (options.excludeNotes && t.notes.match(options.excludeNotes)) {
+      console.log(`Excluding ${t.notes}`);
+      continue;
+    }
     if (options.full) {
       console.log(t);
     } else {

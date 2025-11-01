@@ -63,13 +63,15 @@ program
 
 program.parse(process.argv);
 
+interface ActualCredentials {
+  host: string;
+  server_password: string;
+  encryption_password: string;
+  sync_id: string;
+}
+
 interface Credentials {
-  actual: {
-    host: string;
-    server_password: string;
-    encryption_password: string;
-    sync_id: string;
-  }
+  actual: ActualCredentials
 }
 
 // TODO: inline me

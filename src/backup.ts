@@ -12,13 +12,15 @@ import *  as api from '@actual-app/api';
 // Nope import { exportBudget } from '@actual-app/api/loot-core/server/budgetfiles/app';
 
 
+interface ActualCredentials {
+  host: string;
+  server_password: string;
+  encryption_password: string;
+  sync_id: string;
+}
+
 interface Credentials {
-  actual: {
-    host: string;
-    server_password: string;
-    encryption_password: string;
-    sync_id: string;
-  }
+  actual: ActualCredentials
 }
 
 async function readJsonFile<T>(filePath: string): Promise<T> {

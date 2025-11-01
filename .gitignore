@@ -3,3 +3,7 @@ node_modules/
 dist/
 .aider*
 .yarn/install-state.gz
+
+.pnp.cjs
+.pnp.loader.mjs
+.yarn/unplugged

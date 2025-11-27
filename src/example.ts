@@ -1,4 +1,4 @@
-// TODO make this and prependnotes subcommands of general purpose command
+// TODO make this and others subcommands of general purpose command
 // TODO would be nice not to have manually update sync id when it changes.
 
 // For example:

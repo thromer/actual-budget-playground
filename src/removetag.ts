@@ -5,35 +5,15 @@
 
 import { mkdir, readFile } from 'fs/promises';
 import *  as api from '@actual-app/api';
-import { TransactionEntity } from '@actual-app/api/@types/loot-core/src/types/models';
+import { AccountEntity, TransactionEntity } from '@actual-app/api/@types/loot-core/src/types/models';
 import { Command } from 'commander';
 import { z } from 'zod';
 
 const optionsSchema = z.object({
-  account: z.string(),
+  accounts: z.array(z.string()),
   start: z.iso.date('Must be valid ISO YYYY-MM-DD date'),
   end: z.iso.date('Must be valid ISO YYYY-MM-DD date'),
-  exclude: z.string().transform((val, ctx) => {
-    const firstSlash = val.indexOf('/')
-    const lastSlash = val.lastIndexOf('/')
-    if (firstSlash != 0 || lastSlash < 0 || firstSlash == lastSlash) {
-      ctx.addIssue({
-	code: "custom",
-	message: 'regex must be of the form /<regex>/<optional flags>',
-      });
-      return z.NEVER;
-    }
-    try {
-      return new RegExp(val.slice(1, lastSlash), val.slice(lastSlash + 1));
-    } catch (e) {
-      ctx.addIssue({
-        code: "custom",
-        message: e instanceof Error ? e.message : 'unknown error',
-      });
-      return z.NEVER;
-    }
-  }),
-  prepend: z.string(),
+  tag: z.string(),
   dryRun: z.boolean(),
 }).refine((options) => options.start <= options.end, {message: 'start must be less than or equal to end', path: ['start,end']});
 
@@ -44,11 +24,10 @@ program
   .name('adjustnotes')
   .description('Prepend string to notes field for subset of transactions')
   .version('1.0.0')
-  .requiredOption('-a, --account <str>', 'Account name or id')
+  .requiredOption('-a, --accounts <str...>', 'Account names or ids, e.g. -a one two three, or * for all accounts')
   .requiredOption('-s, --start <date>', 'Start date, YYYY-MM-DD')
   .requiredOption('-e, --end <date>', 'End date, YYYY-MM-DD', '9999-12-31')
-  .requiredOption('-x, --exclude /<pattern>/<optional options>', `Regex to exclude e.g. /\\b(#review|#reviewed)\\b/i`)
-  .requiredOption('-p, --prepend <string>', 'String to prepend')
+  .requiredOption('-t, --tag <str>', "Tag to remove, e.g. -t '#reviewed'")
   .option('-n, --dry-run', 'Dry run mode', false)
   .action((options) => {
     const result = optionsSchema.safeParse(options);
@@ -106,38 +85,51 @@ async function main(options: Options) {
   await api.init(config);
 
   await api.downloadBudget(creds.actual.sync_id);
-  const account = options.account;
-  let acct;
-  const accounts = await api.getAccounts();
-  const by_id = new Map(accounts.map(a => [a.id, a]));
-  if (by_id.has(account)) {
-    acct = by_id.get(account);
+  const accounts = options.accounts;
+  let accts: AccountEntity[] = [];
+  const actualAccounts = await api.getAccounts();
+  if (accounts.includes('*')) {
+    accts = actualAccounts;
   } else {
-    const by_name = new Map(accounts.map(a => [a.name, a]));
-    if (!by_name.has(account)) {
-      console.log(`${account} not found, try one of ${[...by_name.keys()]}`)
-      process.exit(1);
-    }
-    acct = by_name.get(account);
+    const by_id = new Map(actualAccounts.map(a => [a.id, a]));
+    const by_name = new Map(actualAccounts.map(a => [a.name, a]));
+    accounts.map(account => {
+      let acct;
+      if (by_id.has(account)) {
+	acct = by_id.get(account);
+      } else if (by_name.has(account)) {
+	acct = by_name.get(account);
+      } else {
+	console.log(`${account} not found, try one of ${[...by_name.keys()]}`)
+	process.exit(1);
+      }
+      accts.push(acct);
+    });
   }
-  const transactions = await api.getTransactions(acct.id, options.start, options.end);
-  await api.batchBudgetUpdates(async function() {await updateTransactions(transactions, options);});
+  const transactionss:TransactionEntity[][] = [];
+  for (const acct of accts) {
+    transactionss.push(await api.getTransactions(acct.id, options.start, options.end));
+  }
+  await api.batchBudgetUpdates(async function() {
+    const regex = new RegExp(`(^| )${options.tag}(?: |$)`);
+    for (const transactions of transactionss) {
+      await updateTransactions(transactions, regex, options);
+    }
+  });
   await api.shutdown();
 }
 
-async function updateTransactions(transactions: TransactionEntity[], options: Options) {
+async function updateTransactions(transactions: TransactionEntity[], regex: RegExp, options: Options) {
   for (const t of transactions) {
     const old_notes = t.notes ? t.notes : "";
-    console.log(`old_notes=${old_notes}`);
-    if (old_notes.match(options.exclude)) {
-      console.log(`Skipping notes "${old_notes}"`)
-      continue;
-    }
-    const new_notes = `${options.prepend} ${old_notes}`;
-    const prefix = options.dryRun ? 'Dry run, not updating' : 'Updating';
-    console.log(`${prefix} from "${old_notes}" to "${new_notes}"`);
-    if (!options.dryRun) {
-      await api.updateTransaction(t.id, {notes: new_notes});
+    // console.log(`old_notes=${old_notes}`);
+    const new_notes = old_notes.replace(regex, '$1').trimStart();
+    if (old_notes !== new_notes) {
+      const prefix = options.dryRun ? 'Dry run, not updating' : 'Updating';
+      console.log(`${prefix} from "${old_notes}" to "${new_notes}"`);
+      if (!options.dryRun) {
+	await api.updateTransaction(t.id, {notes: new_notes});
+      }
     }
   }
 }

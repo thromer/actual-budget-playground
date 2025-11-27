@@ -119,16 +119,46 @@ async function main(options: Options) {
   await api.shutdown();
 }
 
+function newNotes(old_notes: string, regex: RegExp, dryRun: boolean) {
+  const new_notes = old_notes.replace(regex, '$1').trimStart();
+  if (old_notes !== new_notes) {
+    const prefix = dryRun ? 'Dry run, not updating' : 'Updating';
+    console.log(`${prefix} from "${old_notes}" to "${new_notes}"`);
+  }
+  return new_notes;
+}
+
 async function updateTransactions(transactions: TransactionEntity[], regex: RegExp, options: Options) {
   for (const t of transactions) {
+    const patch: TransactionEntity = {
+      id: t.id,
+      account: t.account,
+      amount: t.amount,
+      date: t.date
+    };
     const old_notes = t.notes ? t.notes : "";
-    // console.log(`old_notes=${old_notes}`);
-    const new_notes = old_notes.replace(regex, '$1').trimStart();
-    if (old_notes !== new_notes) {
-      const prefix = options.dryRun ? 'Dry run, not updating' : 'Updating';
-      console.log(`${prefix} from "${old_notes}" to "${new_notes}"`);
+    const new_notes = newNotes(old_notes, regex, options.dryRun);
+    const t_changed = old_notes !== new_notes;
+    if (t_changed) {
+      patch.notes = new_notes;
+    }
+    let s_changed = false;
+    if (t.subtransactions) {
+      for (const s of t.subtransactions) {
+	const old_notes = s.notes ? s.notes : "";
+	s.notes = newNotes(old_notes, regex, options.dryRun);
+	s_changed ||= (old_notes != s.notes);
+      }
+      if (s_changed) {
+	// patch.subtransactions = t.subtransactions;
+	console.log('WARNING! Subtransactions not handled yet.')
+      }
+    }
+    if (t_changed) { // TODO: || s_changed) {
+      patch.account = t.account;
+      // console.log(`applying patch ${JSON.stringify(patch,null,2)}`);
       if (!options.dryRun) {
-	await api.updateTransaction(t.id, {notes: new_notes});
+	await api.updateTransaction(t.id, patch);
       }
     }
   }

@@ -19,6 +19,7 @@
       "example": "yarn build && node dist/example.js",
       "backup": "yarn build && node dist/backup.js",
       "adjustnotes": "yarn build && node dist/adjustnotes.js",
+      "removetag": "yarn build && node dist/removetag.js",
       "lint": "eslint",
       "lint:fix": "eslint src/**/*.ts --fix"
    },

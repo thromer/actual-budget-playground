@@ -1,7 +1,8 @@
+// TODO: why does it take multiple attempts to get it to patch everything?
+
 // TODO make this and others subcommands of general purpose command
 // TODO: would be nice not to have manually update sync id when it changes.
 // TODO: would be nice to get all the Command.parse errors not just the first.
-
 
 import { mkdir, readFile } from 'fs/promises';
 import *  as api from '@actual-app/api';
@@ -130,12 +131,7 @@ function newNotes(old_notes: string, regex: RegExp, dryRun: boolean) {
 
 async function updateTransactions(transactions: TransactionEntity[], regex: RegExp, options: Options) {
   for (const t of transactions) {
-    const patch: TransactionEntity = {
-      id: t.id,
-      account: t.account,
-      amount: t.amount,
-      date: t.date
-    };
+    const patch = t;
     const old_notes = t.notes ? t.notes : "";
     const new_notes = newNotes(old_notes, regex, options.dryRun);
     const t_changed = old_notes !== new_notes;
@@ -150,11 +146,10 @@ async function updateTransactions(transactions: TransactionEntity[], regex: RegE
 	s_changed ||= (old_notes != s.notes);
       }
       if (s_changed) {
-	// patch.subtransactions = t.subtransactions;
-	console.log('WARNING! Subtransactions not handled yet.')
+	patch.subtransactions = t.subtransactions;
       }
     }
-    if (t_changed) { // TODO: || s_changed) {
+    if (t_changed || s_changed) {
       patch.account = t.account;
       // console.log(`applying patch ${JSON.stringify(patch,null,2)}`);
       if (!options.dryRun) {

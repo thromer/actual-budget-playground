@@ -30,7 +30,7 @@ program
   .requiredOption('-e, --end <date>', 'End date, YYYY-MM-DD', '9999-12-31')
   .requiredOption('-t, --tag <str>', "Tag to remove, e.g. -t '#reviewed'")
   .option('-n, --dry-run', 'Dry run mode', false)
-  .action((options) => {
+  .action(async (options) => {
     const result = optionsSchema.safeParse(options);
     if (!result.success) {
       result.error.issues.forEach(err => {
@@ -38,7 +38,7 @@ program
       });
       process.exit(1);
     }
-    main(result.data);
+    await main(result.data);
   });
 
 program.parse(process.argv);

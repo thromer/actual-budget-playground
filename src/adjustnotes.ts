@@ -50,7 +50,7 @@ program
   .requiredOption('-x, --exclude /<pattern>/<optional options>', `Regex to exclude e.g. /\\b(#review|#reviewed)\\b/i`)
   .requiredOption('-p, --prepend <string>', 'String to prepend')
   .option('-n, --dry-run', 'Dry run mode', false)
-  .action((options) => {
+  .action(async (options) => {
     const result = optionsSchema.safeParse(options);
     if (!result.success) {
       result.error.issues.forEach(err => {
@@ -58,7 +58,7 @@ program
       });
       process.exit(1);
     }
-    main(result.data);
+    await main(result.data);
   });
 
 program.parse(process.argv);

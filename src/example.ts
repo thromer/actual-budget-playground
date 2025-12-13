@@ -55,7 +55,7 @@ program
   .option('-i, --include-notes /<pattern>/<optional options>', `Notes regex to include e.g. /\\b(#review|#reviewed)\\b/i`)
   .option('-x, --exclude-notes /<pattern>/<optional options>', `Notes regex to exclude e.g. /\\b(#review|#reviewed)\\b/i`)
   .option('-f, --full', 'Dump full record', false)
-  .action((options) => {
+  .action(async (options) => {
     const result = optionsSchema.safeParse(options);
     if (!result.success) {
       result.error.issues.forEach(err => {
@@ -65,7 +65,7 @@ program
     }
     console.log(`options.include=${options.includeNotes}`);
     console.log(`options.exclude=${options.excludeNotes}`);
-    main(result.data);
+    await main(result.data);
   });
 
 program.parse(process.argv);

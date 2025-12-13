@@ -5,16 +5,16 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@actual-app/api@npm:^25.10.0":
-  version: 25.10.0
-  resolution: "@actual-app/api@npm:25.10.0"
+"@actual-app/api@npm:^25.12.0":
+  version: 25.12.0
+  resolution: "@actual-app/api@npm:25.12.0"
   dependencies:
     "@actual-app/crdt": "npm:^2.1.0"
-    better-sqlite3: "npm:^12.2.0"
+    better-sqlite3: "npm:^12.4.1"
     compare-versions: "npm:^6.1.1"
     node-fetch: "npm:^3.3.2"
-    uuid: "npm:^11.1.0"
-  checksum: 10c0/d0d9d528df7b625eef9d2db1c5256688e65595ad0a27ee8c8f92e4a9724c4e0c2e2e6795acd6131fff1190ea6cd28143170571a15b68840cf11be8ae28fbb9fa
+    uuid: "npm:^13.0.0"
+  checksum: 10c0/577321f107d719155c26191747290b3566fa6d623494624c37563b2259021299c5d40a9f25a0486aebe2c057d2d32ad4d250d39795826de6eb432084b58ba687
   languageName: node
   linkType: hard
 
@@ -486,7 +486,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "actual-budget-playground@workspace:."
   dependencies:
-    "@actual-app/api": "npm:^25.10.0"
+    "@actual-app/api": "npm:^25.12.0"
     "@eslint/js": "npm:^9.35.0"
     "@types/node": "npm:^24.3.1"
     commander: "npm:^14.0.1"
@@ -575,14 +575,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^12.2.0":
-  version: 12.4.1
-  resolution: "better-sqlite3@npm:12.4.1"
+"better-sqlite3@npm:^12.4.1":
+  version: 12.5.0
+  resolution: "better-sqlite3@npm:12.5.0"
   dependencies:
     bindings: "npm:^1.5.0"
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
-  checksum: 10c0/88773a75d996b4171e5690a38459b05dc814a792701b224bd9909ee084dc0b4c64aaffbdbcf4bbbc6d4e247faf19e91b2a56cf4175d746d3bd9ff14764eb05aa
+  checksum: 10c0/50016aaa9a9db768907da5b109f12f8bb6f6d9be34d68b5623d901fe038cdac0d81be37aa280c27c8e0604d6c2482584b14f9c40f75ad6aa0baa59278c5f7a6a
   languageName: node
   linkType: hard
 
@@ -2299,12 +2299,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:^11.1.0":
-  version: 11.1.0
-  resolution: "uuid@npm:11.1.0"
+"uuid@npm:^13.0.0":
+  version: 13.0.0
+  resolution: "uuid@npm:13.0.0"
   bin:
-    uuid: dist/esm/bin/uuid
-  checksum: 10c0/34aa51b9874ae398c2b799c88a127701408cd581ee89ec3baa53509dd8728cbb25826f2a038f9465f8b7be446f0fbf11558862965b18d21c993684297628d4d3
+    uuid: dist-node/bin/uuid
+  checksum: 10c0/950e4c18d57fef6c69675344f5700a08af21e26b9eff2bf2180427564297368c538ea11ac9fb2e6528b17fc3966a9fd2c5049361b0b63c7d654f3c550c9b3d67
   languageName: node
   linkType: hard
 

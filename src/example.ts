@@ -34,6 +34,7 @@ function createRegexTransform() {
 }
 
 const optionsSchema = z.object({
+  budget: z.string(),
   account: z.string(),
   start: z.iso.date('Must be valid ISO YYYY-MM-DD date'),
   end: z.iso.date('Must be valid ISO YYYY-MM-DD date'),
@@ -49,6 +50,7 @@ program
   .name('adjustnotes')
   .description('Prepend string to notes field for subset of transactions')
   .version('1.0.0')
+  .requiredOption('-b, --budget <str>', 'Budget name')
   .requiredOption('-a, --account <str>', 'Account name or id')
   .requiredOption('-s, --start <date>', 'Start date, YYYY-MM-DD')
   .requiredOption('-e, --end <date>', 'End date, YYYY-MM-DD', '9999-12-31')
@@ -74,7 +76,6 @@ interface ActualCredentials {
   host: string;
   server_password: string;
   encryption_password: string;
-  sync_id: string;
 }
 
 interface Credentials {
@@ -92,6 +93,18 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
     }
     throw error;
   }
+}
+
+async function getSyncId(budgetName: string): Promise<string> {
+  const budgets = await api.getBudgets();
+  const syncIds = new Set(budgets.filter(b => b.name === budgetName).map(b => b.groupId));
+  if (syncIds.size == 0) {
+    throw new Error(`Budget '${budgetName}' not found`);
+  }
+  if (syncIds.size > 1) {
+    throw new Error(`Multiple budgets named '${budgetName}' `);
+  }
+  return Array.from(syncIds)[0] as string;
 }
 
 async function main(options: Options) {
@@ -112,28 +125,27 @@ async function main(options: Options) {
   };
   await api.init(config);
 
-  await api.downloadBudget(creds.actual.sync_id);
+  await api.downloadBudget(await getSyncId(options.budget));
   const account = options.account;
-  let acct;
   const accounts = await api.getAccounts();
   const by_id = new Map(accounts.map(a => [a.id, a]));
-  if (by_id.has(account)) {
-    acct = by_id.get(account);
-  } else {
+  let acct_id = by_id.get(account)?.id;
+  if (!acct_id) {
     const by_name = new Map(accounts.map(a => [a.name, a]));
-    if (!by_name.has(account)) {
+    acct_id = by_name.get(account)?.id;
+    if (!acct_id) {
       console.log(`${account} not found, try one of ${[...by_name.keys()]}`)
       process.exit(1);
     }
-    acct = by_name.get(account);
   }
-  const transactions = await api.getTransactions(acct.id, options.start, options.end);
+  const transactions = await api.getTransactions(acct_id, options.start, options.end);
   for (const t of transactions) {
-    if (options.includeNotes && !t.notes.match(options.includeNotes)) {
+    const t_notes = t.notes ?? "";
+    if (options.includeNotes && !t_notes.match(options.includeNotes)) {
       console.log(`${t.notes} not included`);
       continue;
     }
-    if (options.excludeNotes && t.notes.match(options.excludeNotes)) {
+    if (options.excludeNotes && t_notes.match(options.excludeNotes)) {
       console.log(`Excluding ${t.notes}`);
       continue;
     }

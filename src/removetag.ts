@@ -6,7 +6,8 @@
 
 import { mkdir, readFile } from 'fs/promises';
 import *  as api from '@actual-app/api';
-import { AccountEntity, TransactionEntity } from '@actual-app/api/@types/loot-core/src/types/models';
+import { TransactionEntity } from '@actual-app/api/@types/loot-core/src/types/models';
+import { APIAccountEntity } from '@actual-app/api/@types/loot-core/src/server/api-models';
 import { Command } from 'commander';
 import { z } from 'zod';
 
@@ -87,7 +88,7 @@ async function main(options: Options) {
 
   await api.downloadBudget(creds.actual.sync_id);
   const accounts = options.accounts;
-  let accts: AccountEntity[] = [];
+  let accts: APIAccountEntity[] = [];
   const actualAccounts = await api.getAccounts();
   if (accounts.includes('*')) {
     accts = actualAccounts;
@@ -95,12 +96,11 @@ async function main(options: Options) {
     const by_id = new Map(actualAccounts.map(a => [a.id, a]));
     const by_name = new Map(actualAccounts.map(a => [a.name, a]));
     accounts.map(account => {
-      let acct;
-      if (by_id.has(account)) {
-	acct = by_id.get(account);
-      } else if (by_name.has(account)) {
+      let acct = by_id.get(account);
+      if (!acct) {
 	acct = by_name.get(account);
-      } else {
+      }
+      if (!acct) {
 	console.log(`${account} not found, try one of ${[...by_name.keys()]}`)
 	process.exit(1);
       }

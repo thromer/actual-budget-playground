@@ -107,20 +107,18 @@ async function main(options: Options) {
 
   await api.downloadBudget(creds.actual.sync_id);
   const account = options.account;
-  let acct;
   const accounts = await api.getAccounts();
   const by_id = new Map(accounts.map(a => [a.id, a]));
-  if (by_id.has(account)) {
-    acct = by_id.get(account);
-  } else {
+  let acct_id = by_id.get(account)?.id;
+  if (!acct_id) {
     const by_name = new Map(accounts.map(a => [a.name, a]));
-    if (!by_name.has(account)) {
+    acct_id = by_name.get(account)?.id;
+    if (!acct_id) {
       console.log(`${account} not found, try one of ${[...by_name.keys()]}`)
       process.exit(1);
     }
-    acct = by_name.get(account);
   }
-  const transactions = await api.getTransactions(acct.id, options.start, options.end);
+  const transactions = await api.getTransactions(acct_id, options.start, options.end);
   await api.batchBudgetUpdates(async function() {await updateTransactions(transactions, options);});
   await api.shutdown();
 }

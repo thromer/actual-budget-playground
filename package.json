@@ -20,6 +20,7 @@
       "backup": "yarn build && node dist/backup.js",
       "adjustnotes": "yarn build && node dist/adjustnotes.js",
       "removetag": "yarn build && node dist/removetag.js",
+      "budget": "yarn build && node dist/budget.js",
       "lint": "eslint",
       "lint:fix": "eslint src/**/*.ts --fix"
    },

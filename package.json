@@ -26,8 +26,7 @@
    },
    "packageManager": "yarn@4.10.3",
    "dependencies": {
-      "@actual-app/api": "^26.4.0",
-      "@actual-app/core": "^26.4.0",
+      "@actual-app/api": "^26.5.2",
       "commander": "^14.0.1",
       "typescript": "^5.9.2",
       "zod": "^4.1.12"

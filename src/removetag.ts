@@ -6,8 +6,8 @@
 
 import { mkdir, readFile } from 'fs/promises';
 import *  as api from '@actual-app/api';
-import { TransactionEntity } from '@actual-app/core/src/types/models';
-import { APIAccountEntity } from '@actual-app/core/src/server/api-models';
+import { TransactionEntity } from '@actual-app/core/types/models';
+import { APIAccountEntity } from '@actual-app/core/server/api-models';
 import { Command } from 'commander';
 import { z } from 'zod';
 

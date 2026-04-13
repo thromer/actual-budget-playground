@@ -1,10 +1,11 @@
 {
     "compilerOptions": {
 	"target": "es2022",
+	"moduleResolution": "bundler",
 	"noImplicitAny": true,
 	"useDefineForClassFields": true,
 	"forceConsistentCasingInFileNames": true,
-	"module": "commonjs",
+	"module": "es2015",
 	"lib": ["ES2022"],
 	"outDir": "./dist",
 	"rootDir": "./src",

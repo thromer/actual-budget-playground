@@ -5,7 +5,7 @@
 
 import { mkdir, readFile } from 'fs/promises';
 import *  as api from '@actual-app/api';
-import { TransactionEntity } from '@actual-app/core/src/types/models';
+import { TransactionEntity } from '@actual-app/core/types/models';
 import { Command } from 'commander';
 import { z } from 'zod';
 

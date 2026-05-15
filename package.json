@@ -12,7 +12,7 @@
    },
    "license": "MIT",
    "author": "",
-   "type": "commonjs",
+   "type": "module",
    "main": "dist/index.ts",
    "scripts": {
       "build": "eslint && tsc",
